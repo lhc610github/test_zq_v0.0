@@ -11,7 +11,6 @@
 #include <time.h>
 #include"checksum.h"
 
-/*test*/
 #define BAUDRATE B57600
 #define MODEMDEVICE "/dev/ttyUSB0"
 
