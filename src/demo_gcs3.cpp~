@@ -11,7 +11,7 @@
 #include <time.h>
 #include"checksum.h"
 
-
+/*test*/
 #define BAUDRATE B57600
 #define MODEMDEVICE "/dev/ttyUSB0"
 
@@ -163,8 +163,8 @@ ROS_INFO("sending position_feedback to uav1: x=%.4f, y=%.4f, z=%.4f", _pos_data.
 
         write_n = 0;
 	boost::mutex::scoped_lock send_lock(send_mutex);
-	//write_n=write(fd,buffer,20);
-	write_n=send_write(fd,buffer,20);	
+	write_n=write(fd,buffer,20);
+	//write_n=send_write(fd,buffer,20);	
 	send_lock.unlock();
 	if(write_n!=20)
 	{
@@ -223,8 +223,8 @@ int send_desire_pos(int fd)
 	buffer2[23]=ck2[1];
         write_n2 = 0;
 	boost::mutex::scoped_lock send_lock(send_mutex);
-	//write_n2=write(fd,buffer2,24);
-	write_n2=send_write(fd,buffer2,24);	
+	write_n2=write(fd,buffer2,24);
+	//write_n2=send_write(fd,buffer2,24);	
 	send_lock.unlock();
 	if(write_n2!=24)
 	{
