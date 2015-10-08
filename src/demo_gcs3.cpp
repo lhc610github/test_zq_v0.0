@@ -28,8 +28,8 @@ boost::mutex send_mutex;
 struct timespec time1 = {0, 0};
 struct timespec time2 = {0, 0};
 static bool flag = true;
-float send_currentpos_freq=25;
-float send_desirepos_freq=10;
+float send_currentpos_freq=1;
+float send_desirepos_freq=1;
 float ref_data[4];
 
 int send_write(int fd,char *buffer,int length);
@@ -113,7 +113,7 @@ void udpcallback(const demo_test::pos_data& pos)
         vy = (xyz.pos[1]-xyz_old.pos[1])*120;
         vz = (xyz.pos[2]-xyz_old.pos[2])*120;
     }*/
-    memcpy(&xyz_old, &xyz,sizeof(xyz));
+    //memcpy(&xyz_old, &xyz,sizeof(xyz));
 
     //ROS_INFO_STREAM("callback: thread_id="<<boost::this_thread::get_id());
 }
@@ -162,8 +162,8 @@ ROS_INFO("sending position_feedback to uav1: x=%.4f, y=%.4f, z=%.4f", _pos_data.
 
         write_n = 0;
 	boost::mutex::scoped_lock send_lock(send_mutex);
-	//write_n=write(fd,buffer,20);
-	write_n=send_write(fd,buffer,20);	
+	write_n=write(fd,buffer,20);
+	//write_n=send_write(fd,buffer,20);	
 	send_lock.unlock();
 	if(write_n!=20)
 	{
@@ -222,8 +222,8 @@ int send_desire_pos(int fd)
 	buffer2[23]=ck2[1];
         write_n2 = 0;
 	boost::mutex::scoped_lock send_lock(send_mutex);
-	//write_n2=write(fd,buffer2,24);
-	write_n2=send_write(fd,buffer2,24);	
+	write_n2=write(fd,buffer2,24);
+	//write_n2=send_write(fd,buffer2,24);	
 	send_lock.unlock();
 	if(write_n2!=24)
 	{
@@ -238,6 +238,7 @@ int send_desire_pos(int fd)
     return 0;
 
 }
+////////////////////////////////////////////////////////////////////////
 
 int send_write(int fd,char *buffer,int length)
 {
@@ -258,6 +259,8 @@ else
 	memcpy(&time2,&time1,sizeof(time1));
 return status_write;
 }
+
+//////////////////////////////////////////////////////////////////////
 
 int main(int argc, char **argv)
 {

@@ -28,8 +28,8 @@ boost::mutex send_mutex;
 struct timespec time1 = {0, 0};
 struct timespec time2 = {0, 0};
 static bool flag = true;
-float send_currentpos_freq=25;
-float send_desirepos_freq=10;
+float send_currentpos_freq=2;
+float send_desirepos_freq=1;
 float ref_data[4];
 
 int send_write(int fd,char *buffer,int length);
@@ -101,19 +101,19 @@ void udpcallback(const demo_test::pos_data& pos)
     }
     */
     //lock mutex
-    clock_gettime(CLOCK_MONOTONIC, &time1);
-    long int dt = (time1.tv_sec-time2.tv_sec)*1000000000+time1.tv_nsec-time2.tv_nsec;  
-    memcpy(&time2,&time1,sizeof(time1));
+  //  clock_gettime(CLOCK_MONOTONIC, &time1);
+    //long int dt = (time1.tv_sec-time2.tv_sec)*1000000000+time1.tv_nsec-time2.tv_nsec;  
+    //memcpy(&time2,&time1,sizeof(time1));
     //printf("\n-----------dt:%ld-----------\n", dt);
     boost::mutex::scoped_lock lock(pos_mutex);
     memcpy(&xyz, &pos, sizeof(pos));
-    if(dt<14000000)
+    /*if(dt<14000000)
     {
         vx = (xyz.pos[0]-xyz_old.pos[0])*120;
         vy = (xyz.pos[1]-xyz_old.pos[1])*120;
         vz = (xyz.pos[2]-xyz_old.pos[2])*120;
-    }
-    memcpy(&xyz_old, &xyz,sizeof(xyz));
+    }*/
+    //memcpy(&xyz_old, &xyz,sizeof(xyz));
 
     //ROS_INFO_STREAM("callback: thread_id="<<boost::this_thread::get_id());
 }
@@ -145,9 +145,9 @@ int send_current_pos(int fd)
 	{
 	//delay_time=1000000/send_currentpos_freq-20;
 	boost::mutex::scoped_lock lock(pos_mutex);
-	_pos_data.x = 1;//xyz.pos[0];
-	_pos_data.y = 2;//xyz.pos[2];
-	_pos_data.z = -3;//-xyz.pos[1];
+	_pos_data.x = xyz.pos[0];
+	_pos_data.y = xyz.pos[2];
+	_pos_data.z = -xyz.pos[1];
 	lock.unlock();
 ROS_INFO("sending position_feedback to uav1: x=%.4f, y=%.4f, z=%.4f", _pos_data.x, _pos_data.y, _pos_data.z);
     	memcpy(buffer+6, &_pos_data, sizeof(_pos_data));
@@ -238,15 +238,29 @@ int send_desire_pos(int fd)
     return 0;
 
 }
+////////////////////////////////////////////////////////////////////////
 
 int send_write(int fd,char *buffer,int length)
 {
 int status_write;
 long int dt;
-//if (dt>(1000000000/))
-status_write=write(fd,buffer,length);
+
+    clock_gettime(CLOCK_MONOTONIC, &time1);
+    dt = (time1.tv_sec-time2.tv_sec)*1000000000+time1.tv_nsec-time2.tv_nsec;  
+    
+if (dt>(1000000000/40))
+	{
+		status_write=write(fd,buffer,length);
+	}
+else 
+	{	usleep(dt/1000);
+	status_write=write(fd,buffer,length);
+	}
+	memcpy(&time2,&time1,sizeof(time1));
 return status_write;
 }
+
+//////////////////////////////////////////////////////////////////////
 
 int main(int argc, char **argv)
 {
