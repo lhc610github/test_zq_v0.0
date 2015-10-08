@@ -101,18 +101,18 @@ void udpcallback(const demo_test::pos_data& pos)
     }
     */
     //lock mutex
-    clock_gettime(CLOCK_MONOTONIC, &time1);
-    long int dt = (time1.tv_sec-time2.tv_sec)*1000000000+time1.tv_nsec-time2.tv_nsec;  
-    memcpy(&time2,&time1,sizeof(time1));
+  //  clock_gettime(CLOCK_MONOTONIC, &time1);
+    //long int dt = (time1.tv_sec-time2.tv_sec)*1000000000+time1.tv_nsec-time2.tv_nsec;  
+    //memcpy(&time2,&time1,sizeof(time1));
     //printf("\n-----------dt:%ld-----------\n", dt);
     boost::mutex::scoped_lock lock(pos_mutex);
     memcpy(&xyz, &pos, sizeof(pos));
-    if(dt<14000000)
+    /*if(dt<14000000)
     {
         vx = (xyz.pos[0]-xyz_old.pos[0])*120;
         vy = (xyz.pos[1]-xyz_old.pos[1])*120;
         vz = (xyz.pos[2]-xyz_old.pos[2])*120;
-    }
+    }*/
     memcpy(&xyz_old, &xyz,sizeof(xyz));
 
     //ROS_INFO_STREAM("callback: thread_id="<<boost::this_thread::get_id());
@@ -145,9 +145,9 @@ int send_current_pos(int fd)
 	{
 	//delay_time=1000000/send_currentpos_freq-20;
 	boost::mutex::scoped_lock lock(pos_mutex);
-	_pos_data.x = 1;//xyz.pos[0];
-	_pos_data.y = 2;//xyz.pos[2];
-	_pos_data.z = -3;//-xyz.pos[1];
+	_pos_data.x = xyz.pos[0];
+	_pos_data.y = xyz.pos[2];
+	_pos_data.z = -xyz.pos[1];
 	lock.unlock();
 ROS_INFO("sending position_feedback to uav1: x=%.4f, y=%.4f, z=%.4f", _pos_data.x, _pos_data.y, _pos_data.z);
     	memcpy(buffer+6, &_pos_data, sizeof(_pos_data));
@@ -162,8 +162,8 @@ ROS_INFO("sending position_feedback to uav1: x=%.4f, y=%.4f, z=%.4f", _pos_data.
 
         write_n = 0;
 	boost::mutex::scoped_lock send_lock(send_mutex);
-	write_n=write(fd,buffer,20);
-	//write_n=send_write(fd,buffer,20);	
+	//write_n=write(fd,buffer,20);
+	write_n=send_write(fd,buffer,20);	
 	send_lock.unlock();
 	if(write_n!=20)
 	{
@@ -222,8 +222,8 @@ int send_desire_pos(int fd)
 	buffer2[23]=ck2[1];
         write_n2 = 0;
 	boost::mutex::scoped_lock send_lock(send_mutex);
-	write_n2=write(fd,buffer2,24);
-	//write_n2=send_write(fd,buffer2,24);	
+	//write_n2=write(fd,buffer2,24);
+	write_n2=send_write(fd,buffer2,24);	
 	send_lock.unlock();
 	if(write_n2!=24)
 	{
@@ -243,8 +243,19 @@ int send_write(int fd,char *buffer,int length)
 {
 int status_write;
 long int dt;
-//if (dt>(1000000000/))
-status_write=write(fd,buffer,length);
+
+    clock_gettime(CLOCK_MONOTONIC, &time1);
+    dt = (time1.tv_sec-time2.tv_sec)*1000000000+time1.tv_nsec-time2.tv_nsec;  
+    
+if (dt>(1000000000/40))
+	{
+		status_write=write(fd,buffer,length);
+	}
+else 
+	{	usleep(dt/1000);
+	status_write=write(fd,buffer,length);
+	}
+	memcpy(&time2,&time1,sizeof(time1));
 return status_write;
 }
 
